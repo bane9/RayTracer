@@ -12,6 +12,7 @@
 #include <iostream>
 #include <memory>
 #include <random>
+#include <thread>
 
 
 class RayTracer : public olc::PixelGameEngine
@@ -72,23 +73,33 @@ public:
 
 	bool OnUserUpdate(float fElapsedTime) override
 	{
-		static int x = 0, y = 0;
-		Vector3 col;
-		for (int i = 0; i < numOfSamples; i++) {
-			float u = (x + RandomReal()) / ScreenWidth();
-			float v = 1.0f - ((y + RandomReal()) / ScreenHeight());
-			Ray r = cam.getRay(u, v);
-			col += Color(r, hitableList);
-		}
-		col /= numOfSamples;
-		col = Vector3(sqrtf(col.x), sqrtf(col.y), sqrtf(col.z)) * 255.0f;
-				
-		Draw(x, y, { (uint8_t)col.x, (uint8_t)col.y, (uint8_t)col.z });
+		auto renderLine = [&](int y) {
+			for (int x = 0; x < this->ScreenWidth(); x++) {
+				Vector3 col;
+				for (int i = 0; i < numOfSamples; i++) {
+					float u = (x + RandomReal()) / ScreenWidth();
+					float v = 1.0f - ((y + RandomReal()) / ScreenHeight());
+					Ray r = cam.getRay(u, v);
+					col += Color(r, hitableList);
+				}
 
-		if (++x == ScreenWidth()) {
-			x = 0;
-			if (++y == ScreenHeight()) y = 0;
-		}
+				col /= numOfSamples;
+				col = Vector3(sqrtf(col.x), sqrtf(col.y), sqrtf(col.z)) * 255.0f;
+
+				Draw(x, y, { (uint8_t)col.x, (uint8_t)col.y, (uint8_t)col.z });
+			}
+		};
+
+		static int y = 0;
+		std::vector<std::thread> trVec;
+
+		int offset = std::min(4, ScreenHeight() - y);
+
+		for (int i = 0; i < offset; i++) trVec.emplace_back(renderLine, y + i);
+
+		for (auto& tr : trVec) if (tr.joinable()) tr.join();
+
+		if ((y += offset) >= ScreenHeight()) y = 0;
 
 		return true;
 	}
@@ -100,7 +111,7 @@ public:
 		60.0f, (float)width / height, (lookFrom - lookAt).lenght(), 0.0f};
 	static constexpr int numOfSamples = 100;
 	static constexpr int width = 640;
-	static constexpr int height = 360;
+	static constexpr int height = 320;
 
 };
 
