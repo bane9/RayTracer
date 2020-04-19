@@ -72,21 +72,22 @@ public:
 
 	bool OnUserUpdate(float fElapsedTime) override
 	{
-		for (int y = 0; y < height; y++) {
-			for (int x = 0; x < width; x++) {
-				Vector3 col;
-				for (int i = 0; i < numOfSamples; i++) {
-					float u = (x + RandomReal()) / ScreenWidth();
-					float v = 1.0f - ((y + RandomReal()) / ScreenHeight());
-					Ray r = cam.getRay(u, v);
-					col += Color(r, hitableList);
-				}
-				col /= numOfSamples;
-				col = Vector3(sqrtf(col.x), sqrtf(col.y), sqrtf(col.z)) * 255.0f;
+		static int x = 0, y = 0;
+		Vector3 col;
+		for (int i = 0; i < numOfSamples; i++) {
+			float u = (x + RandomReal()) / ScreenWidth();
+			float v = 1.0f - ((y + RandomReal()) / ScreenHeight());
+			Ray r = cam.getRay(u, v);
+			col += Color(r, hitableList);
+		}
+		col /= numOfSamples;
+		col = Vector3(sqrtf(col.x), sqrtf(col.y), sqrtf(col.z)) * 255.0f;
 				
-				Draw(x, y, { (uint8_t)col.x, (uint8_t)col.y, (uint8_t)col.z });
-			}
-			std::cout << ((float)y / height * 100.0f) << "% done.\n";
+		Draw(x, y, { (uint8_t)col.x, (uint8_t)col.y, (uint8_t)col.z });
+
+		if (++x == ScreenWidth()) {
+			x = 0;
+			if (++y == ScreenHeight()) y = 0;
 		}
 
 		return true;
