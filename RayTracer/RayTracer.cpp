@@ -93,13 +93,13 @@ public:
 		static int y = 0;
 		std::vector<std::thread> trVec;
 
-		int offset = std::min(4, ScreenHeight() - y);
+		int offset = std::min((int)std::thread::hardware_concurrency(), ScreenHeight() - y);
 
 		for (int i = 0; i < offset; i++) trVec.emplace_back(renderLine, y + i);
 
 		for (auto& tr : trVec) if (tr.joinable()) tr.join();
 
-		if ((y += offset) >= ScreenHeight()) y = 0;
+		if ((y += (offset > 0 ? offset : 1)) >= ScreenHeight()) y = 0;
 
 		return true;
 	}
